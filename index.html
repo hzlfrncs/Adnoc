@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ADNOC Net Zero 2045 – Live Progress Dashboard</title>
+  <style>
+    :root {
+      --primary: #007cc2;
+      --primary-dark: #003a63;
+      --accent: #00c6ff;
+      --bg: #020617;
+      --card: #050b1f;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --good: #22c55e;
+      --bad: #f97373;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #082f49 0%, #020617 50%, #000 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    /* Header with ADNOC logo */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: linear-gradient(90deg, #020617 0%, #020617 40%, #022c44 100%);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.6);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 30% 20%, #ffffff 0, #e5e7eb 45%, #94a3b8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.7);
+      animation: logo-glow 3s ease-in-out infinite alternate;
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand-text p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .netzero-pill {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.4), transparent 60%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .netzero-pill::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 50%, rgba(34, 197, 94, 0.3), transparent 55%);
+      opacity: 0.9;
+      mix-blend-mode: screen;
+      animation: pulse-soft 2.4s infinite;
+    }
+
+    .netzero-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--good);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    /* Layout */
+    .container {
+      padding: 20px 28px 32px;
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 980px) {
+      .top-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .top-row { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.2), transparent 45%);
+      background-color: rgba(15, 23, 42, 0.92);
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.9);
+      position: relative;
+      overflow: hidden;
+      transform: translateY(10px);
+      opacity: 0;
+      animation: card-in 0.7s ease forwards;
+    }
+
+    .kpi-card:nth-child(2) { animation-delay: 0.08s; }
+    .kpi-card:nth-child(3) { animation-delay: 0.16s; }
+
+    .kpi-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.06) 45%, transparent 100%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(0px) scale(1.01);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 1);
+      transition: all 220ms ease-out;
+    }
+
+    .kpi-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .kpi-main-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    .kpi-unit {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .kpi-change {
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 5px;
+    }
+
+    .kpi-change.good { color: var(--good); }
+    .kpi-change.bad { color: var(--bad); }
+
+    .chip {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .controls button {
+      background: linear-gradient(120deg, var(--accent), var(--primary));
+      border: none;
+      color: #0b1120;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.9);
+    }
+
+    .controls button span {
+      font-size: 16px;
+      transform: translateY(-1px);
+    }
+
+    .controls button:hover {
+      filter: brightness(1.05);
+    }
+
+    .controls small {
+      font-size: 11px;
+      color: var(--text-muted);
+      max-width: 520px;
+    }
+
+    .chart-card {
+      background: radial-gradient(circle at top, rgba(59, 130, 246, 0.14), transparent 65%);
+      background-color: rgba(15, 23, 42, 0.96);
+      border-radius: 14px;
+      padding: 14px 14px 18px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(59, 130, 246, 0.14), transparent 60%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart-header h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .chart-header span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    canvas {
+      border-radius: 10px;
+      background: radial-gradient(circle at top left, #020617 0%, #020617 40%, #000 100%);
+    }
+
+    footer {
+      padding: 8px 28px 22px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: left;
+    }
+
+    /* Animations */
+    @keyframes logo-glow {
+      from { box-shadow: 0 0 8px rgba(59, 130, 246, 0.7); transform: scale(1); }
+      to { box-shadow: 0 0 18px rgba(59, 130, 246, 1); transform: scale(1.04); }
+    }
+
+    @keyframes pulse-soft {
+      0% { opacity: 0.7; transform: scale(1); }
+      100% { opacity: 0.35; transform: scale(1.15); }
+    }
+
+    @keyframes pulse-dot {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes card-in {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-logo">
+      <!-- Replace with real ADNOC logo file -->
+      <img src="ADNOC-LOGO.png" alt="ADNOC logo">
+    </div>
+    <div class="brand-text">
+      <h1>ADNOC – Net Zero 2045</h1>
+      <p>Operational decarbonisation and methane performance overview (simulated data for academic use).</p>
+    </div>
+  </div>
+  <div class="netzero-pill">
+    <span class="netzero-dot"></span>
+    <span>Net Zero 2045 pathway</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="controls">
+    <button id="refreshBtn">
+      <span>⟳</span> Simulate new data
+    </button>
+    <small>
+      Dashboard illustrates three transition KPIs: operational GHG emissions, methane intensity, and low‑carbon power share in ADNOC operations (all values are randomly simulated for this assessment).
+    </small>
+  </div>
+
+  <div class="top-row">
+    <!-- KPI 1 -->
+    <div class="kpi-card">
+      <div class="kpi-title">Operational GHG emissions</div>
+      <div class="kpi-main-row">
+        <div>
+          <span id="ghgValue" class="kpi-value">18.4</span>
+          <span class="kpi-unit">Mt CO₂e</span>
+        </div>
+        <span class="chip">Target: ↓ to 0 by 2045</span>
+      </div>
+      <div class="kpi-sub">Current year emissions across operated assets (Scope 1+2 – indicative for demo).</div>
+      <div id="ghgChange" class="kpi-change"></div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-card">
+      <div class="kpi-title">Methane intensity</div>
+      <div class="kpi-main-row">
+        <div>
+          <span id="methaneValue" class="kpi-value">0.11</span>
+          <span class="kpi-unit">% of marketed gas</span>
+        </div>
+        <span class="chip">Target: ≤ 0.15% by 2030</span>
+      </div>
+      <div class="kpi-sub">Indicative upstream methane intensity aligned with leading commitments.</div>
+      <div id="methaneChange" class="kpi-change"></div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-card">
+      <div class="kpi-title">Low‑carbon power share</div>
+      <div class="kpi-main-row">
+        <div>
+          <span id="lowCarbonValue" class="kpi-value">23.5</span>
+          <span class="kpi-unit">% of operations</span>
+        </div>
+        <span class="chip">Ambition: growing toward 2045</span>
+      </div>
+      <div class="kpi-sub">Share of ADNOC operations powered by grid, renewables and other low‑carbon sources.</div>
+      <div id="lowCarbonChange" class="kpi-change"></div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <h2>Illustrative emissions pathway to Net Zero 2045</h2>
+      <span>Sample Mt CO₂e – historic and forward‑looking trajectory (simulated)</span>
+    </div>
+    <canvas id="emissionsChart" width="840" height="260"></canvas>
+  </div>
+</div>
+
+<footer>
+  Built as a simple Business Intelligence web artefact using HTML, CSS and vanilla JavaScript. All numbers and trajectories are simulated for academic illustration of ADNOC’s Net Zero 2045 progress.
+</footer>
+
+<script>
+  // State for “previous” values so we can animate and show change
+  let lastGHG = 18.4;
+  let lastMethane = 0.11;
+  let lastLowCarbon = 23.5;
+
+  function randomInRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function formatChange(newVal, oldVal, higherIsGood) {
+    const diff = newVal - oldVal;
+    const abs = Math.abs(diff);
+    if (abs < 0.001) return { text: "No change vs. last sample", cls: "" };
+
+    const sign = diff > 0 ? "+" : "-";
+    const label = (higherIsGood && diff > 0) || (!higherIsGood && diff < 0)
+      ? "improvement"
+      : "decline";
+    const cls = label === "improvement" ? "good" : "bad";
+    return { text: sign + abs.toFixed(2) + " vs. last sample (" + label + ")", cls };
+  }
+
+  // Smooth number animation
+  function animateNumber(element, from, to, duration, decimals = 2) {
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const value = from + (to - from) * t;
+      element.textContent = value.toFixed(decimals);
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function updateKPIs() {
+    const ghgEl = document.getElementById("ghgValue");
+    const methaneEl = document.getElementById("methaneValue");
+    const lowCarbonEl = document.getElementById("lowCarbonValue");
+
+    const ghgChangeEl = document.getElementById("ghgChange");
+    const methaneChangeEl = document.getElementById("methaneChange");
+    const lowCarbonChangeEl = document.getElementById("lowCarbonChange");
+
+    // New random “data”
+    const newGHG = parseFloat(randomInRange(17.2, 19.2).toFixed(2));      // lower is good
+    const newMethane = parseFloat(randomInRange(0.08, 0.16).toFixed(3));  // lower is good
+    const newLowCarbon = parseFloat(randomInRange(21, 32).toFixed(1));    // higher is good
+
+    animateNumber(ghgEl, lastGHG, newGHG, 600, 2);
+    animateNumber(methaneEl, lastMethane, newMethane, 600, 3);
+    animateNumber(lowCarbonEl, lastLowCarbon, newLowCarbon, 600, 1);
+
+    const ghgChange = formatChange(newGHG, lastGHG, false);
+    ghgChangeEl.textContent = ghgChange.text;
+    ghgChangeEl.className = "kpi-change " + ghgChange.cls;
+
+    const methaneChange = formatChange(newMethane, lastMethane, false);
+    methaneChangeEl.textContent = methaneChange.text;
+    methaneChangeEl.className = "kpi-change " + methaneChange.cls;
+
+    const lowCarbonChange = formatChange(newLowCarbon, lastLowCarbon, true);
+    lowCarbonChangeEl.textContent = lowCarbonChange.text;
+    lowCarbonChangeEl.className = "kpi-change " + lowCarbonChange.cls;
+
+    lastGHG = newGHG;
+    lastMethane = newMethane;
+    lastLowCarbon = newLowCarbon;
+
+    nudgeChart();
+  }
+
+  // Simple animated bar “pathway” chart
+  const canvas = document.getElementById("emissionsChart");
+  const ctx = canvas.getContext("2d");
+  const years = [2020, 2025, 2030, 2035, 2040, 2045];
+  let emissions = [24, 21, 17, 12, 7, 0];
+
+  function drawChart() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const padL = 46;
+    const padR = 18;
+    const padT = 20;
+    const padB = 30;
+
+    const pw = w - padL - padR;
+    const ph = h - padT - padB;
+
+    const maxVal = Math.max(...emissions) * 1.15 || 1;
+
+    // Grid
+    ctx.strokeStyle = "rgba(148,163,184,0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + (ph / 4) * i;
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + pw, y);
+    }
+    ctx.stroke();
+
+    // Axes
+    ctx.strokeStyle = "rgba(203,213,225,0.8)";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, padT + ph);
+    ctx.lineTo(padL + pw, padT + ph);
+    ctx.stroke();
+
+    // Y labels
+    ctx.fillStyle = "rgba(203,213,225,0.9)";
+    ctx.font = "11px system-ui";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i <= 4; i++) {
+      const val = (maxVal / 4) * (4 - i);
+      const y = padT + (ph / 4) * i;
+      ctx.fillText(val.toFixed(0), padL - 6, y);
+    }
+
+    // X labels
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    years.forEach((year, i) => {
+      const x = padL + (pw / (years.length - 1)) * i;
+      ctx.fillText(year, x, padT + ph + 6);
+    });
+
+    // Bars
+    const barWidth = pw / (years.length * 1.8);
+    years.forEach((year, i) => {
+      const xCenter = padL + (pw / (years.length - 1)) * i;
+      const value = emissions[i];
+      const barHeight = (value / maxVal) * ph;
+      const x = xCenter - barWidth / 2;
+      const y = padT + ph - barHeight;
+
+      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+      gradient.addColorStop(0, "rgba(56,189,248,0.95)");
+      gradient.addColorStop(1, "rgba(37,99,235,0.8)");
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barHeight, 4);
+      ctx.fill();
+    });
+
+    // Line on top of bars
+    ctx.strokeStyle = "rgba(234,179,8,0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    years.forEach((year, i) => {
+      const x = padL + (pw / (years.length - 1)) * i;
+      const value = emissions[i];
+      const y = padT + ph - (value / maxVal) * ph;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Points
+    ctx.fillStyle = "rgba(234,179,8,0.95)";
+    years.forEach((year, i) => {
+      const x = padL + (pw / (years.length - 1)) * i;
+      const value = emissions[i];
+      const y = padT + ph - (value / maxVal) * ph;
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function nudgeChart() {
+    emissions = emissions.map((val, idx) => {
+      if (idx === emissions.length - 1) return 0;
+      const noise = (Math.random() - 0.5) * 1.4;
+      const next = val + noise;
+      return next < 0 ? 0 : parseFloat(next.toFixed(1));
+    });
+    drawChart();
+  }
+
+  // Initial render and hook up button
+  drawChart();
+  document.getElementById("refreshBtn").addEventListener("click", updateKPIs);
+</script>
+</body>
+</html>
